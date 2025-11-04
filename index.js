@@ -7,11 +7,11 @@ dotenv.config();
 
 // Use environment variables with sensible defaults to avoid committing secrets
 const db = new pg.Client({
-  user: process.env.PGUSER || "postgres",
-  host: process.env.PGHOST || "localhost",
-  database: process.env.PGDATABASE || "world",
-  password: process.env.PGPASSWORD || "ybthegoat",
-  port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DATABASE,
+  password: process.env.PG_PASSWORD,
+  port: process.env.PG_PORT ? Number(process.env.PG_PORT) : 5432,
 });
 
 const app = express();

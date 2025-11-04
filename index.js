@@ -1,13 +1,17 @@
 import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
+// Load environment variables from a .env file if present (install dotenv and add to dependencies to use)
+import dotenv from "dotenv";
+dotenv.config();
 
+// Use environment variables with sensible defaults to avoid committing secrets
 const db = new pg.Client({
-  user: "postgres",
-  host: "localhost",
-  database: "world",
-  password: "ybthegoat",
-  port: 5432,
+  user: process.env.PGUSER || "postgres",
+  host: process.env.PGHOST || "localhost",
+  database: process.env.PGDATABASE || "world",
+  password: process.env.PGPASSWORD || "ybthegoat",
+  port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
 });
 
 const app = express();

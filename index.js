@@ -1,59 +1,55 @@
 import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
-// Load environment variables from a .env file if present (install dotenv and add to dependencies to use)
 import dotenv from "dotenv";
-dotenv.config();
-
-// Use environment variables with sensible defaults to avoid committing secrets
-const db = new pg.Client({
-  user: process.env.PG_USER,
-  host: process.env.PG_HOST,
-  database: process.env.PG_DATABASE,
-  password: process.env.PG_PASSWORD,
-  port: process.env.PG_PORT ? Number(process.env.PG_PORT) : 5432,
-});
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-db.connect();
-
-let quiz = [];
-db.query("SELECT * FROM capitals", (err, res) => {
-  if (err) {
-    console.error("Error executing query", err.stack);
-  } else {
-    quiz = res.rows;
-  }
-  db.end();
+// ✅ Use connection string from Render instead of localhost parameters
+const db = new pg.Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // Required for Render's PostgreSQL
 });
 
+db.connect()
+  .then(() => console.log("✅ Connected to Render PostgreSQL"))
+  .catch((err) => console.error("❌ Database connection error:", err.stack));
+
+let quiz = [];
+
+// ✅ Load quiz data after connection succeeds
+db.query("SELECT * FROM capitals")
+  .then((res) => {
+    quiz = res.rows;
+    console.log(`Loaded ${quiz.length} quiz items.`);
+  })
+  .catch((err) => console.error("Error executing query:", err.stack));
+
 let totalCorrect = 0;
+let currentQuestion = {};
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-let currentQuestion = {};
-
 // GET home page
 app.get("/", async (req, res) => {
   totalCorrect = 0;
   await nextQuestion();
-  console.log(currentQuestion);
   res.render("index.ejs", { question: currentQuestion });
 });
 
-// POST a new post
+// POST submit handler
 app.post("/submit", (req, res) => {
-  let answer = req.body.answer.trim();
-  let isCorrect = false;
-  if (currentQuestion.capital.toLowerCase() === answer.toLowerCase()) {
-    totalCorrect++;
-    console.log(totalCorrect);
-    isCorrect = true;
-  }
+  const answer = req.body.answer.trim();
+  const isCorrect =
+    currentQuestion.capital.toLowerCase() === answer.toLowerCase();
+
+  if (isCorrect) totalCorrect++;
 
   nextQuestion();
   res.render("index.ejs", {
@@ -69,5 +65,5 @@ async function nextQuestion() {
 }
 
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
